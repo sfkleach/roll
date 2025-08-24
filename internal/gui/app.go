@@ -17,8 +17,8 @@ type App struct {
 	window      fyne.Window
 	diceEntry   *widget.Entry
 	rollButton  *widget.Button
-	resultLabel *widget.Label
-	detailLabel *widget.Label
+	resultsCard *widget.Card
+	totalCard   *widget.Card
 }
 
 // NewApp creates a new GUI application instance.
@@ -34,18 +34,22 @@ func NewApp(window fyne.Window) *App {
 func (a *App) setupUI() {
 	// Create input field for dice notation.
 	a.diceEntry = widget.NewEntry()
-	a.diceEntry.SetPlaceHolder("Enter dice notation (e.g., 3d6, d20, 2d10 d6)")
-	a.diceEntry.Text = "3d6" // Default value for convenience.
+	a.diceEntry.SetPlaceHolder("e.g. 2d6")
+	// No default text - starts empty so placeholder is visible.
 
 	// Create roll button.
 	a.rollButton = widget.NewButton("Roll Dice", a.onRollButtonClicked)
 	a.rollButton.Importance = widget.HighImportance
 
-	// Create result labels.
-	a.resultLabel = widget.NewLabel("Total: -")
-	a.resultLabel.TextStyle = fyne.TextStyle{Bold: true}
-	a.detailLabel = widget.NewLabel("Click 'Roll Dice' to get started!")
-	a.detailLabel.Wrapping = fyne.TextWrapWord
+	// Create results card (will be populated when rolling).
+	a.resultsCard = widget.NewCard("", "", container.NewVBox(
+		widget.NewLabel("Click 'Roll Dice' to get started!"),
+	))
+
+	// Create total card (will be populated when rolling).
+	a.totalCard = widget.NewCard("", "", container.NewVBox(
+		widget.NewLabel(""),
+	))
 
 	// Allow Enter key to trigger roll.
 	a.diceEntry.OnSubmitted = func(string) {
@@ -56,12 +60,10 @@ func (a *App) setupUI() {
 	inputContainer := container.NewBorder(nil, nil, nil, a.rollButton, a.diceEntry)
 
 	content := container.NewVBox(
-		widget.NewCard("Dice Notation", "", inputContainer),
+		inputContainer,
 		widget.NewSeparator(),
-		widget.NewCard("Results", "", container.NewVBox(
-			a.resultLabel,
-			a.detailLabel,
-		)),
+		a.resultsCard,
+		a.totalCard,
 	)
 
 	a.window.SetContent(content)
@@ -72,7 +74,7 @@ func (a *App) onRollButtonClicked() {
 	notation := strings.TrimSpace(a.diceEntry.Text)
 
 	if notation == "" {
-		a.showError("Please enter dice notation (e.g., 3d6, d20, 2d10 d6)")
+		a.showError("Please enter dice notation (e.g. 2d6)")
 		return
 	}
 
@@ -90,27 +92,45 @@ func (a *App) onRollButtonClicked() {
 	a.updateResults(result)
 }
 
-// updateResults updates the result display with the roll results.
+// updateResults updates the result display with separate areas for dice rolls and total.
 func (a *App) updateResults(result dice.RollResult) {
-	// Update total.
-	a.resultLabel.SetText(fmt.Sprintf("Total: %d", result.Total))
+	// Create the dice results grid (pre-allocate with capacity for die rolls).
+	gridContent := make([]fyne.CanvasObject, 0, len(result.DieRolls)*2)
 
-	// Update individual roll details.
-	var details strings.Builder
-	details.WriteString("Individual rolls: ")
+	// Add each individual die roll as a row in the grid.
+	for _, dieRoll := range result.DieRolls {
+		// Left column: dice type (e.g., "d6", "d20").
+		diceType := widget.NewLabel(fmt.Sprintf("d%d", dieRoll.Die.Sides))
+		diceType.Alignment = fyne.TextAlignLeading
 
-	for i, roll := range result.IndividualRolls {
-		if i > 0 {
-			details.WriteString(", ")
-		}
-		details.WriteString(fmt.Sprintf("%d", roll))
+		// Right column: roll result.
+		rollValue := widget.NewLabel(fmt.Sprintf("%d", dieRoll.Result))
+		rollValue.Alignment = fyne.TextAlignTrailing
+
+		gridContent = append(gridContent, diceType, rollValue)
 	}
 
-	a.detailLabel.SetText(details.String())
+	// Create a 2-column grid for dice results.
+	diceGrid := container.NewGridWithColumns(2, gridContent...)
+
+	// Update the results card content.
+	a.resultsCard.SetContent(diceGrid)
+
+	// Create total display.
+	totalLabel := widget.NewLabel(fmt.Sprintf("Total: %d", result.Total))
+	totalLabel.Alignment = fyne.TextAlignCenter
+	totalLabel.TextStyle = fyne.TextStyle{Bold: true}
+
+	// Update the total card content.
+	a.totalCard.SetContent(totalLabel)
 }
 
 // showError displays an error message to the user.
 func (a *App) showError(message string) {
-	a.resultLabel.SetText("Error")
-	a.detailLabel.SetText(message)
+	errorLabel := widget.NewLabel(message)
+	errorLabel.Wrapping = fyne.TextWrapWord
+	a.resultsCard.SetContent(errorLabel)
+
+	// Clear the total area.
+	a.totalCard.SetContent(widget.NewLabel(""))
 }

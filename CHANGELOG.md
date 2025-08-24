@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Single die notation: `d20` (implicit count of 1)
   - Multiple dice groups: `2d10 d6`, `1d20,7d4`, `3d6+2d4`
   - Mixed separators: space, comma, and plus signs
+- Professional 2-column grid results display
+  - Left column shows dice type (e.g., "d6", "d20")
+  - Right column shows individual roll result
+  - Dice shown in the order typed by user
+  - Bold total row at the bottom
+- Proper placeholder text behavior: shows "e.g. 2d6" in greyed text that disappears when user clicks
+- Thread-safe random number generation using `math/rand/v2`
+- Enhanced dice result tracking with `DieRoll` structure
 - Comprehensive test coverage for all dice notation formats
 - Fyne-based GUI framework setup for cross-platform support
 - Full test coverage for dice functionality

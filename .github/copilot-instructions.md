@@ -42,6 +42,15 @@ It should accept the following expressions:
 - "2d10 d6" for rolling two ten-sided dice and one six-sided die
 - "1d20,7d4" for rolling one twenty-sided die and seven four-sided dice
 
+The input field is initially set to greyed out text "e.g. 2d6" which disappears
+as soon as the user clicks into the field.
+
+The results are displayed in a 2-column grid. Each individual dice rolls are
+shown on their own row, in the order typed by the user. The left column is the
+number of faces of the dice, prefixed by the dice character "d", so a six-sided
+dice is shown as "d6". The right column is the individual roll value for that
+dice. After all the individual dice rolls, a final row shows the total roll value.
+
 I want to be able to run it on my Linux desktop and iPhone.
 
 ## Version 2

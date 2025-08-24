@@ -195,6 +195,47 @@ func TestParseDiceNotationSpecificExamples(t *testing.T) {
 	})
 }
 
+func TestDieRollStructure(t *testing.T) {
+	// Test that the new DieRoll structure works correctly.
+	diceSet, err := ParseDiceNotation("2d6 d20")
+	if err != nil {
+		t.Fatalf("Failed to parse dice notation: %v", err)
+	}
+
+	result := diceSet.Roll()
+
+	// Should have 3 dice total (2d6 + 1d20).
+	if len(result.DieRolls) != 3 {
+		t.Errorf("Expected 3 die rolls, got %d", len(result.DieRolls))
+	}
+
+	// Check that die rolls have correct structure.
+	expectedSides := []int{6, 6, 20} // Order should be preserved
+	for i, dieRoll := range result.DieRolls {
+		if dieRoll.Die.Sides != expectedSides[i] {
+			t.Errorf("Die roll %d: expected %d sides, got %d", i, expectedSides[i], dieRoll.Die.Sides)
+		}
+		if dieRoll.Result < 1 || dieRoll.Result > dieRoll.Die.Sides {
+			t.Errorf("Die roll %d: result %d is out of range [1,%d]", i, dieRoll.Result, dieRoll.Die.Sides)
+		}
+	}
+
+	// Verify backward compatibility.
+	if len(result.IndividualRolls) != len(result.DieRolls) {
+		t.Errorf("IndividualRolls length %d doesn't match DieRolls length %d",
+			len(result.IndividualRolls), len(result.DieRolls))
+	}
+
+	// Verify total calculation.
+	expectedTotal := 0
+	for _, roll := range result.IndividualRolls {
+		expectedTotal += roll
+	}
+	if result.Total != expectedTotal {
+		t.Errorf("Total %d doesn't match sum of individual rolls %d", result.Total, expectedTotal)
+	}
+}
+
 func TestDiceSetString(t *testing.T) {
 	// Test empty dice set.
 	emptySet := NewDiceSet([]Die{})

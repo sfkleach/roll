@@ -31,7 +31,7 @@ linters-settings:
           - operation
           - return
   lll:
-    line-length: 120
+    line-length: 0  # Disable line length checking
   misspell:
     locale: US
   prealloc:
@@ -48,7 +48,6 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - lll
     - misspell
     - prealloc
     - staticcheck

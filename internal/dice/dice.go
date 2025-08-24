@@ -19,10 +19,17 @@ type DiceSet struct {
 	Dice []Die
 }
 
+// DieRoll represents a single die roll with its result.
+type DieRoll struct {
+	Die    Die // The die that was rolled
+	Result int // The result of the roll
+}
+
 // RollResult represents the result of rolling a set of dice.
 type RollResult struct {
-	IndividualRolls []int
-	Total           int
+	DieRolls        []DieRoll // Individual die rolls with their dice info
+	IndividualRolls []int     // Just the roll values (for backward compatibility)
+	Total           int       // Sum of all rolls
 }
 
 // NewDie creates a new die with the specified number of sides.
@@ -45,17 +52,20 @@ func NewDiceSet(dice []Die) DiceSet {
 
 // Roll rolls all dice in the set and returns the results.
 func (ds DiceSet) Roll() RollResult {
-	rolls := make([]int, 0, len(ds.Dice)) // Pre-allocate with known capacity.
+	dieRolls := make([]DieRoll, 0, len(ds.Dice)) // Pre-allocate with known capacity.
+	rolls := make([]int, 0, len(ds.Dice))        // Pre-allocate with known capacity.
 	total := 0
 
 	for _, die := range ds.Dice {
 		roll := die.Roll()
+		dieRolls = append(dieRolls, DieRoll{Die: die, Result: roll})
 		rolls = append(rolls, roll)
 		total += roll
 	}
 
 	return RollResult{
-		IndividualRolls: rolls,
+		DieRolls:        dieRolls,
+		IndividualRolls: rolls, // For backward compatibility
 		Total:           total,
 	}
 }
