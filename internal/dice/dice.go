@@ -47,13 +47,15 @@ var fancyDiceValues = map[string][]string{
 
 // generatePlayingCards creates all 52 playing card symbols.
 func generatePlayingCards() []string {
-	suits := []string{"♠", "♥", "♦", "♣"}
-	ranks := []string{"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"}
+	suits := []string{"♣", "♦", "♥", "♠"}
+	ranks := []string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"}
 
 	cards := make([]string, 0, 52)
 	for _, suit := range suits {
 		for _, rank := range ranks {
-			cards = append(cards, rank+suit)
+			// Add numerical position (1-52) alongside the card symbol.
+			card := fmt.Sprintf("%s%s", rank, suit)
+			cards = append(cards, card)
 		}
 	}
 	return cards

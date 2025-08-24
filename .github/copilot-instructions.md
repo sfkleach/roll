@@ -72,6 +72,12 @@ it means that the group will not roll the same number twice! In other words,
 there will be no repeats within that group. This only applies to a single
 group.
 
+## Version 1.3
+
+Add an unobtrusive way to switch between dice order and sort-by-value. This 
+will be a simple 'hotkey' toggle, allowing users to quickly switch modes without
+having to click buttons.
+
 ## Version 2
 
 You can save a dice set for later use by clicking the save button. This will 
