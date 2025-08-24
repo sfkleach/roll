@@ -72,6 +72,12 @@ it means that the group will not roll the same number twice! In other words,
 there will be no repeats within that group. This only applies to a single
 group.
 
+## Version 1.3
+
+You can run roll from the command line, passing the dice expressions as arguments.
+In addition you can pass a --ascending or --descending flag to sort the individual 
+dice rolls in ascending or descending order by value.
+
 
 ## Version 2
 
