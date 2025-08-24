@@ -99,13 +99,32 @@ func (a *App) updateResults(result dice.RollResult) {
 
 	// Add each individual die roll as a row in the grid.
 	for _, dieRoll := range result.DieRolls {
-		// Left column: dice type (e.g., "d6", "d20").
-		diceType := widget.NewLabel(fmt.Sprintf("d%d", dieRoll.Die.Sides))
+		// Left column: dice type (e.g., "d6", "d20", "f4", "f12").
+		diceType := widget.NewLabel(dieRoll.Type)
 		diceType.Alignment = fyne.TextAlignLeading
 
-		// Right column: roll result.
-		rollValue := widget.NewLabel(fmt.Sprintf("%d", dieRoll.Result))
+		// For fancy dice, use monospace font for consistency.
+		if dieRoll.FancyValue != "" {
+			diceType.TextStyle = fyne.TextStyle{Monospace: true}
+		}
+
+		// Right column: roll result (fancy value or numeric).
+		var displayValue string
+		if dieRoll.FancyValue != "" {
+			// Display fancy dice value
+			displayValue = dieRoll.FancyValue
+		} else {
+			// Display regular dice value
+			displayValue = fmt.Sprintf("%d", dieRoll.Result)
+		}
+
+		rollValue := widget.NewLabel(displayValue)
 		rollValue.Alignment = fyne.TextAlignTrailing
+
+		// For fancy dice, use monospace font for better Unicode rendering.
+		if dieRoll.FancyValue != "" {
+			rollValue.TextStyle = fyne.TextStyle{Monospace: true}
+		}
 
 		gridContent = append(gridContent, diceType, rollValue)
 	}

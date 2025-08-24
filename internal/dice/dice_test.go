@@ -1,6 +1,7 @@
 package dice
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -251,5 +252,122 @@ func TestDiceSetString(t *testing.T) {
 	// The exact order may vary due to map iteration, so just check it contains expected parts.
 	if str == "" {
 		t.Error("Expected non-empty string representation")
+	}
+}
+
+// Tests for fancy dice functionality (Version 1.1).
+func TestFancyDice(t *testing.T) {
+	tests := []struct {
+		name     string
+		notation string
+		wantType string
+		wantErr  bool
+	}{
+		{"Single f2", "f2", "f2", false},
+		{"Single f4", "f4", "f4", false},
+		{"Single f6", "f6", "f6", false},
+		{"Single f7", "f7", "f7", false},
+		{"Single f12", "f12", "f12", false},
+		{"Single f13", "f13", "f13", false},
+		{"Single f52", "f52", "f52", false},
+		{"Multiple f4", "3f4", "f4", false},
+		{"Invalid fancy dice", "f99", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set, err := ParseDiceNotation(tt.notation)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ParseDiceNotation(%q) expected error, got nil", tt.notation)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("ParseDiceNotation(%q) unexpected error: %v", tt.notation, err)
+				return
+			}
+
+			// Roll the dice and check the result.
+			result := set.Roll()
+
+			// Check that we got the right type of dice.
+			found := false
+			for _, roll := range result.DieRolls {
+				if roll.Type == tt.wantType {
+					found = true
+
+					// For fancy dice, check that FancyValue is populated.
+					if strings.HasPrefix(tt.wantType, "f") && roll.FancyValue == "" {
+						t.Errorf("ParseDiceNotation(%q) fancy dice missing FancyValue", tt.notation)
+					}
+
+					// For regular dice, check that FancyValue is empty.
+					if strings.HasPrefix(tt.wantType, "d") && roll.FancyValue != "" {
+						t.Errorf("ParseDiceNotation(%q) regular dice has unexpected FancyValue", tt.notation)
+					}
+				}
+			}
+
+			if !found {
+				t.Errorf("ParseDiceNotation(%q) expected dice type %s not found", tt.notation, tt.wantType)
+			}
+		})
+	}
+}
+
+func TestFancyDiceValues(t *testing.T) {
+	// Test that f2 returns "heads" or "tails".
+	for i := 0; i < 10; i++ {
+		set, err := ParseDiceNotation("f2")
+		if err != nil {
+			t.Fatalf("ParseDiceNotation(f2) unexpected error: %v", err)
+		}
+
+		result := set.Roll()
+		if len(result.DieRolls) != 1 {
+			t.Fatalf("ParseDiceNotation(f2) expected 1 roll, got %d", len(result.DieRolls))
+		}
+
+		roll := result.DieRolls[0]
+		if roll.FancyValue == "" {
+			t.Fatal("ParseDiceNotation(f2) missing FancyValue")
+		}
+
+		value := roll.FancyValue
+		if value != "heads" && value != "tails" {
+			t.Errorf("ParseDiceNotation(f2) expected 'heads' or 'tails', got %q", value)
+		}
+	}
+}
+
+func TestMixedDiceNotation(t *testing.T) {
+	// Test mixing regular and fancy dice.
+	set, err := ParseDiceNotation("d20 f4 2f12")
+	if err != nil {
+		t.Fatalf("ParseDiceNotation(mixed) unexpected error: %v", err)
+	}
+
+	result := set.Roll()
+	if len(result.DieRolls) != 4 { // 1 d20 + 1 f4 + 2 f12
+		t.Fatalf("Expected 4 dice rolls, got %d", len(result.DieRolls))
+	}
+
+	// Check that we have the expected types.
+	types := make(map[string]int)
+	for _, roll := range result.DieRolls {
+		types[roll.Type]++
+	}
+
+	if types["d20"] != 1 {
+		t.Errorf("Expected 1 d20, got %d", types["d20"])
+	}
+	if types["f4"] != 1 {
+		t.Errorf("Expected 1 f4, got %d", types["f4"])
+	}
+	if types["f12"] != 2 {
+		t.Errorf("Expected 2 f12, got %d", types["f12"])
 	}
 }

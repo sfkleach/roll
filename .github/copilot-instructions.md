@@ -51,7 +51,20 @@ number of faces of the dice, prefixed by the dice character "d", so a six-sided
 dice is shown as "d6". The right column is the individual roll value for that
 dice. After all the individual dice rolls, a final row shows the total roll value.
 
-I want to be able to run it on my Linux desktop and iPhone.
+I want to be able to run it on my Linux desktop.
+
+## Version 1.1
+
+Some "fancy"" dice are given custom unicode characters:
+
+- "f2". a two sided dice that prints "heads" or "tails"
+- "f4", a four sided dice that shows the unicode suit characters
+- "f6", a six sided dice that shows the unicode characters for the six faces
+- "f7", a seven sided dice that shows the days of the week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
+- "f12", a twelve sided dice that shows the unicode characters for the zodiac signs
+- "f13", a thirteen sided dice that shows one of A, 2, 3, 4, 5, 6, 7, 8, 9 10, J, Q, K
+- "f52", a 52 sided dice that shows unicode playing card symbols
+
 
 ## Version 2
 
@@ -63,6 +76,13 @@ modification.
 
 ## Version 3
 
-I want to be able to run it on my Mac and Windows desktops and my Android phone
-as well.
+I want to be able to run it on my 
 
+- MacOS laptop/desktops
+- Windows 11 desktops 
+- Android phone
+- iOS
+
+# Version 4
+
+I want to be

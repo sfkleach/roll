@@ -21,8 +21,10 @@ type DiceSet struct {
 
 // DieRoll represents a single die roll with its result.
 type DieRoll struct {
-	Die    Die // The die that was rolled
-	Result int // The result of the roll
+	Die        Die    // The die that was rolled
+	Result     int    // The result of the roll
+	Type       string // Type identifier (e.g., "d6", "f4")
+	FancyValue string // For fancy dice, the display value (e.g., "♠", "heads")
 }
 
 // RollResult represents the result of rolling a set of dice.
@@ -30,6 +32,31 @@ type RollResult struct {
 	DieRolls        []DieRoll // Individual die rolls with their dice info
 	IndividualRolls []int     // Just the roll values (for backward compatibility)
 	Total           int       // Sum of all rolls
+}
+
+// Standard values for fancy dice.
+var fancyDiceValues = map[string][]string{
+	"f2":  {"heads", "tails"},
+	"f4":  {"♠", "♥", "♦", "♣"},           // Suit characters
+	"f6":  {"⚀", "⚁", "⚂", "⚃", "⚄", "⚅"}, // Unicode dice faces (U+2680-U+2685)
+	"f7":  {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"},
+	"f12": {"♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"}, // Zodiac signs
+	"f13": {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"},
+	"f52": generatePlayingCards(),
+}
+
+// generatePlayingCards creates all 52 playing card symbols.
+func generatePlayingCards() []string {
+	suits := []string{"♠", "♥", "♦", "♣"}
+	ranks := []string{"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"}
+
+	cards := make([]string, 0, 52)
+	for _, suit := range suits {
+		for _, rank := range ranks {
+			cards = append(cards, rank+suit)
+		}
+	}
+	return cards
 }
 
 // NewDie creates a new die with the specified number of sides.
@@ -40,6 +67,14 @@ func NewDie(sides int) Die {
 // Roll rolls a single die and returns the result.
 func (d Die) Roll() int {
 	if d.Sides <= 0 {
+		// Handle fancy dice (negative sides) or invalid dice.
+		if d.Sides < 0 {
+			// This is a fancy die - return a random index + 1.
+			fancyType := fmt.Sprintf("f%d", -d.Sides)
+			if values, exists := fancyDiceValues[fancyType]; exists {
+				return rand.IntN(len(values)) + 1
+			}
+		}
 		return 0 // Defensive check: avoid rolling invalid dice.
 	}
 	return rand.IntN(d.Sides) + 1
@@ -58,7 +93,31 @@ func (ds DiceSet) Roll() RollResult {
 
 	for _, die := range ds.Dice {
 		roll := die.Roll()
-		dieRolls = append(dieRolls, DieRoll{Die: die, Result: roll})
+
+		var dieType string
+		var fancyValue string
+
+		if die.Sides < 0 {
+			// This is a fancy die.
+			fancyType := fmt.Sprintf("f%d", -die.Sides)
+			dieType = fancyType
+
+			if values, exists := fancyDiceValues[fancyType]; exists && roll > 0 && roll <= len(values) {
+				fancyValue = values[roll-1] // Convert 1-based roll to 0-based index
+			}
+		} else {
+			// Regular die.
+			dieType = fmt.Sprintf("d%d", die.Sides)
+			fancyValue = ""
+		}
+
+		dieRoll := DieRoll{
+			Die:        die,
+			Result:     roll,
+			Type:       dieType,
+			FancyValue: fancyValue,
+		}
+		dieRolls = append(dieRolls, dieRoll)
 		rolls = append(rolls, roll)
 		total += roll
 	}
@@ -115,17 +174,22 @@ func splitDiceExpression(notation string) []string {
 	return parts
 }
 
-// parseSingleDiceGroup parses a single dice group like "3d6" or "d20".
+// parseSingleDiceGroup parses a single dice group like "3d6", "d20", or "2f4".
 func parseSingleDiceGroup(group string) ([]Die, error) {
 	group = strings.TrimSpace(group)
 	if group == "" {
 		return nil, fmt.Errorf("empty dice group")
 	}
 
-	// Regular expression to match dice notation with optional count.
-	// Matches: "3d6", "d20", "1d4" etc.
-	re := regexp.MustCompile(`^(\d*)d(\d+)$`)
-	matches := re.FindStringSubmatch(group)
+	// Check for fancy dice notation first: [count]f[type]
+	fancyRe := regexp.MustCompile(`^(\d*)f(\d+)$`)
+	if matches := fancyRe.FindStringSubmatch(group); matches != nil {
+		return parseFancyDice(matches[1], matches[2])
+	}
+
+	// Regular dice notation: [count]d[sides]
+	regularRe := regexp.MustCompile(`^(\d*)d(\d+)$`)
+	matches := regularRe.FindStringSubmatch(group)
 
 	if len(matches) != 3 {
 		return nil, fmt.Errorf("invalid dice notation: %s", group)
@@ -160,6 +224,34 @@ func parseSingleDiceGroup(group string) ([]Die, error) {
 	var dice []Die
 	for i := 0; i < count; i++ {
 		dice = append(dice, NewDie(sides))
+	}
+
+	return dice, nil
+}
+
+// parseFancyDice parses fancy dice notation and creates special "dice" with negative sides to mark them as fancy.
+func parseFancyDice(countStr, typeStr string) ([]Die, error) {
+	count := 1
+	if countStr != "" {
+		var err error
+		count, err = strconv.Atoi(countStr)
+		if err != nil || count <= 0 {
+			return nil, fmt.Errorf("invalid dice count: %s", countStr)
+		}
+	}
+
+	fancyType := "f" + typeStr
+	if _, exists := fancyDiceValues[fancyType]; !exists {
+		return nil, fmt.Errorf("unsupported fancy dice type: %s", fancyType)
+	}
+
+	// Create "dice" with negative sides to mark them as fancy dice.
+	// We'll encode the fancy type in the sides value.
+	fancyTypeNum, _ := strconv.Atoi(typeStr)
+	var dice []Die
+	for i := 0; i < count; i++ {
+		// Use negative sides to indicate fancy dice.
+		dice = append(dice, Die{Sides: -fancyTypeNum})
 	}
 
 	return dice, nil
