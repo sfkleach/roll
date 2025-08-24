@@ -1,0 +1,68 @@
+# golangci-lint configuration file
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters-settings:
+  revive:
+    rules:
+      - name: package-comments
+        severity: warning
+      - name: exported
+        severity: warning
+        disabled: false
+        arguments:
+          - "disableStutteringCheck"
+  gocyclo:
+    min-complexity: 15
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  goimports:
+    local-prefixes: github.com/sfkleach/roll
+  gomnd:
+    settings:
+      mnd:
+        checks: 
+          - argument
+          - case
+          - condition
+          - operation
+          - return
+  lll:
+    line-length: 120
+  misspell:
+    locale: US
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+
+linters:
+  enable:
+    - gocyclo
+    - gofmt
+    - goimports
+    - revive  # Replacement for deprecated golint
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - prealloc
+    - staticcheck
+    - typecheck
+    - unconvert
+    - unused
+  disable:
+    - errcheck # Disable for now, will enable later
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - gosec
+        - dupl
+  exclude-use-default: false
