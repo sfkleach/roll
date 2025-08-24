@@ -371,3 +371,166 @@ func TestMixedDiceNotation(t *testing.T) {
 		t.Errorf("Expected 2 f12, got %d", types["f12"])
 	}
 }
+
+// Tests for exclusive dice functionality (Version 1.2).
+func TestExclusiveDiceParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		notation string
+		wantDice int
+		wantErr  bool
+		wantType string
+	}{
+		{"Exclusive regular dice", "3D6", 3, false, "exclusive regular"},
+		{"Exclusive fancy dice", "4F4", 4, false, "exclusive fancy"},
+		{"Single exclusive die", "D20", 1, false, "exclusive regular"},
+		{"Mixed exclusive and regular", "2d6 3D4", 5, false, "mixed"},
+		{"Too many exclusive dice", "7D6", 0, true, "error"},
+		{"Too many exclusive fancy", "5F4", 0, true, "error"},
+		{"Invalid exclusive fancy", "3F99", 0, true, "error"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set, err := ParseDiceNotation(tt.notation)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ParseDiceNotation(%q) expected error, got nil", tt.notation)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("ParseDiceNotation(%q) unexpected error: %v", tt.notation, err)
+				return
+			}
+
+			if len(set.Dice) != tt.wantDice {
+				t.Errorf("ParseDiceNotation(%q) expected %d dice, got %d", tt.notation, tt.wantDice, len(set.Dice))
+			}
+		})
+	}
+}
+
+func TestExclusiveDiceUniqueness(t *testing.T) {
+	// Test that exclusive regular dice don't repeat values.
+	t.Run("3D6 no repeats", func(t *testing.T) {
+		set, err := ParseDiceNotation("3D6")
+		if err != nil {
+			t.Fatalf("ParseDiceNotation(3D6) unexpected error: %v", err)
+		}
+
+		// Test multiple times to be sure.
+		for i := 0; i < 10; i++ {
+			result := set.Roll()
+			if len(result.IndividualRolls) != 3 {
+				t.Fatalf("Expected 3 rolls, got %d", len(result.IndividualRolls))
+			}
+
+			// Check uniqueness.
+			seen := make(map[int]bool)
+			for _, value := range result.IndividualRolls {
+				if seen[value] {
+					t.Errorf("Run %d: Duplicate value %d found in exclusive dice roll: %v", i, value, result.IndividualRolls)
+				}
+				seen[value] = true
+
+				// Check valid range.
+				if value < 1 || value > 6 {
+					t.Errorf("Run %d: Value %d out of range [1,6]", i, value)
+				}
+			}
+		}
+	})
+
+	// Test that exclusive fancy dice don't repeat values.
+	t.Run("3F4 no repeats", func(t *testing.T) {
+		set, err := ParseDiceNotation("3F4")
+		if err != nil {
+			t.Fatalf("ParseDiceNotation(3F4) unexpected error: %v", err)
+		}
+
+		// Test multiple times to be sure.
+		for i := 0; i < 10; i++ {
+			result := set.Roll()
+			if len(result.DieRolls) != 3 {
+				t.Fatalf("Expected 3 die rolls, got %d", len(result.DieRolls))
+			}
+
+			// Check uniqueness of fancy values.
+			seenFancy := make(map[string]bool)
+			for _, roll := range result.DieRolls {
+				if seenFancy[roll.FancyValue] {
+					t.Errorf("Run %d: Duplicate fancy value '%s' found in exclusive dice roll", i, roll.FancyValue)
+				}
+				seenFancy[roll.FancyValue] = true
+
+				// Check that fancy value is populated.
+				if roll.FancyValue == "" {
+					t.Errorf("Run %d: Missing fancy value for f4 dice", i)
+				}
+			}
+		}
+	})
+}
+
+func TestMixedExclusiveAndRegular(t *testing.T) {
+	// Test that mixing exclusive and regular dice works correctly.
+	set, err := ParseDiceNotation("2d6 3D4")
+	if err != nil {
+		t.Fatalf("ParseDiceNotation(2d6 3D4) unexpected error: %v", err)
+	}
+
+	result := set.Roll()
+	if len(result.IndividualRolls) != 5 {
+		t.Fatalf("Expected 5 rolls total, got %d", len(result.IndividualRolls))
+	}
+
+	// The first 2 values (2d6) can repeat, the last 3 values (3D4) should be unique.
+	lastThreeValues := result.IndividualRolls[2:] // Skip first 2 (2d6)
+	seen := make(map[int]bool)
+	for i, value := range lastThreeValues {
+		if seen[value] {
+			t.Errorf("Duplicate value %d found in exclusive 3D4 portion at position %d: %v", value, i, lastThreeValues)
+		}
+		seen[value] = true
+
+		// Check valid range for D4.
+		if value < 1 || value > 4 {
+			t.Errorf("Value %d out of range [1,4] for D4 dice", value)
+		}
+	}
+}
+
+func TestExclusiveErrorCases(t *testing.T) {
+	// Test error when requesting more exclusive dice than possible values.
+	tests := []struct {
+		name     string
+		notation string
+		wantErr  string
+	}{
+		{"Too many D6", "7D6", "cannot roll 7 exclusive dice with only 6 sides"},
+		{"Too many F4", "5F4", "cannot roll 5 exclusive f4 dice with only 4 values"},
+		{"Exactly max D6", "6D6", ""}, // Should work
+		{"Exactly max F4", "4F4", ""}, // Should work
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseDiceNotation(tt.notation)
+
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("ParseDiceNotation(%q) expected error containing %q, got nil", tt.notation, tt.wantErr)
+				} else if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("ParseDiceNotation(%q) expected error containing %q, got %q", tt.notation, tt.wantErr, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ParseDiceNotation(%q) unexpected error: %v", tt.notation, err)
+				}
+			}
+		})
+	}
+}

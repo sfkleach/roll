@@ -65,6 +65,12 @@ Some "fancy"" dice are given custom unicode characters:
 - "f13", a thirteen sided dice that shows one of A, 2, 3, 4, 5, 6, 7, 8, 9 10, J, Q, K
 - "f52", a 52 sided dice that shows unicode playing card symbols
 
+## Version 1.2
+
+Now for _exclusive_ dice. When you write a group like 3D6 or 5D20 or even 13F52, 
+it means that the group will not roll the same number twice! In other words, 
+there will be no repeats within that group. This only applies to a single
+group.
 
 ## Version 2
 
