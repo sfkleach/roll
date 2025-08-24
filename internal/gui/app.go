@@ -3,6 +3,7 @@ package gui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -35,7 +36,7 @@ func NewApp(window fyne.Window) *App {
 func (a *App) setupUI() {
 	// Create input field for dice notation.
 	a.diceEntry = widget.NewEntry()
-	a.diceEntry.SetPlaceHolder("e.g. 2d6")
+	a.diceEntry.SetPlaceHolder("e.g. 2d6, -a 3d6, --descending 2d20")
 	// No default text - starts empty so placeholder is visible.
 
 	// Create roll button.
@@ -70,12 +71,50 @@ func (a *App) setupUI() {
 	a.window.SetContent(content)
 }
 
+// parseFlagsFromInput extracts sorting flags from the input text and returns cleaned dice notation and sorting preferences.
+func parseFlagsFromInput(input string) (diceNotation string, ascending bool, descending bool, err error) {
+	parts := strings.Fields(input)
+	var cleanParts []string
+	
+	for _, part := range parts {
+		switch part {
+		case "-a", "--ascending":
+			if descending {
+				return "", false, false, fmt.Errorf("cannot specify both ascending and descending flags")
+			}
+			ascending = true
+		case "-d", "--descending":
+			if ascending {
+				return "", false, false, fmt.Errorf("cannot specify both ascending and descending flags")
+			}
+			descending = true
+		default:
+			cleanParts = append(cleanParts, part)
+		}
+	}
+	
+	diceNotation = strings.Join(cleanParts, " ")
+	return diceNotation, ascending, descending, nil
+}
+
 // onRollButtonClicked handles the roll button click event.
 func (a *App) onRollButtonClicked() {
-	notation := strings.TrimSpace(a.diceEntry.Text)
+	input := strings.TrimSpace(a.diceEntry.Text)
+
+	if input == "" {
+		a.showError("Please enter dice notation (e.g. 2d6, -a 3d6, --descending 2d20)")
+		return
+	}
+
+	// Parse flags from input.
+	notation, ascending, descending, err := parseFlagsFromInput(input)
+	if err != nil {
+		a.showError(fmt.Sprintf("Flag error: %v", err))
+		return
+	}
 
 	if notation == "" {
-		a.showError("Please enter dice notation (e.g. 2d6)")
+		a.showError("Please enter dice notation after any flags")
 		return
 	}
 
@@ -89,8 +128,32 @@ func (a *App) onRollButtonClicked() {
 	// Roll the dice.
 	result := diceSet.Roll()
 
-	// Update the display.
-	a.updateResults(result)
+	// Sort if requested.
+	if ascending || descending {
+		sortedRolls := make([]dice.DieRoll, len(result.DieRolls))
+		copy(sortedRolls, result.DieRolls)
+
+		if ascending {
+			sort.Slice(sortedRolls, func(i, j int) bool {
+				return sortedRolls[i].Result < sortedRolls[j].Result
+			})
+		} else if descending {
+			sort.Slice(sortedRolls, func(i, j int) bool {
+				return sortedRolls[i].Result > sortedRolls[j].Result
+			})
+		}
+
+		// Create a new result with sorted rolls.
+		sortedResult := dice.RollResult{
+			DieRolls:        sortedRolls,
+			IndividualRolls: result.IndividualRolls, // Keep original for compatibility.
+			Total:           result.Total,
+		}
+		a.updateResults(sortedResult)
+	} else {
+		// Update the display with original order.
+		a.updateResults(result)
+	}
 }
 
 // updateResults updates the result display with separate areas for dice rolls and total.
