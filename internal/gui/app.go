@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -181,16 +180,14 @@ func (a *App) updateResults(result dice.RollResult) {
 
 		// Right column: roll result (fancy value or numeric).
 		if dieRoll.FancyValue != "" {
-			// For fancy dice, use Canvas text with large font size
-			canvasText := canvas.NewText(dieRoll.FancyValue, nil)
-			canvasText.TextSize = 24 // Much larger font size
-			canvasText.TextStyle = fyne.TextStyle{
+			// For fancy dice, use Monospace font but no scaling
+			rollValue := widget.NewLabel(dieRoll.FancyValue)
+			rollValue.Alignment = fyne.TextAlignTrailing
+			rollValue.TextStyle = fyne.TextStyle{
 				Monospace: true,
 				Bold:      true,
 			}
-			canvasText.Alignment = fyne.TextAlignTrailing
-			canvasText.Resize(fyne.NewSize(60, 40))
-			gridContent = append(gridContent, diceType, canvasText)
+			gridContent = append(gridContent, diceType, rollValue)
 		} else {
 			// Regular numeric value
 			rollValue := widget.NewLabel(fmt.Sprintf("%d", dieRoll.Result))

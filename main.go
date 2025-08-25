@@ -24,6 +24,7 @@ func main() {
 	flag.BoolVar(descending, "d", false, "Sort individual dice rolls in descending order (short form)")
 	var showHelp = flag.Bool("help", false, "Show help and cheatsheet")
 	var showVersion = flag.Bool("version", false, "Show version information")
+	var fancyFiles = flag.String("fancy", "", "Load custom fancy dice from files matching glob pattern")
 	flag.Parse()
 
 	// Handle version flag.
@@ -36,6 +37,15 @@ func main() {
 	if *showHelp {
 		fmt.Println(info.GetCheatsheetContent())
 		os.Exit(0)
+	}
+
+	// Load custom fancy dice files if specified.
+	if *fancyFiles != "" {
+		err := dice.LoadCustomFancyDice(*fancyFiles)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading fancy dice files: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Get remaining arguments (dice expressions).

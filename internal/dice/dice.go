@@ -2,8 +2,11 @@
 package dice
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand/v2"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -27,6 +30,12 @@ type DieRoll struct {
 	FancyValue string // For fancy dice, the display value (e.g., "♠", "heads")
 }
 
+// FancyDieValue represents a single value for a fancy die.
+type FancyDieValue struct {
+	Name  string // Display name (e.g., "heads", "♠", "Mon")
+	Value int    // Scoring value
+}
+
 // RollResult represents the result of rolling a set of dice.
 type RollResult struct {
 	DieRolls        []DieRoll // Individual die rolls with their dice info
@@ -35,27 +44,137 @@ type RollResult struct {
 }
 
 // Standard values for fancy dice.
-var fancyDiceValues = map[string][]string{
-	"f2":  {"heads", "tails"},
-	"f4":  {"♠", "♥", "♦", "♣"},           // Suit characters
-	"f6":  {"⚀", "⚁", "⚂", "⚃", "⚄", "⚅"}, // Unicode dice faces (U+2680-U+2685)
-	"f7":  {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"},
-	"f12": {"♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"}, // Zodiac signs
-	"f13": {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"},
-	"f52": generatePlayingCards(),
+var fancyDiceValues = map[string][]FancyDieValue{
+	"f2":  {{"heads", 1}, {"tails", 0}},
+	"f4":  {{"♠", 4}, {"♥", 3}, {"♦", 2}, {"♣", 1}},                           // Suit characters
+	"f6":  {{"1⚀", 1}, {"2⚁", 2}, {"3⚂", 3}, {"4⚃", 4}, {"5⚄", 5}, {"6⚅", 6}}, // Unicode dice faces (U+2680-U+2685)
+	"f7":  {{"Mon", 1}, {"Tue", 2}, {"Wed", 3}, {"Thu", 4}, {"Fri", 5}, {"Sat", 6}, {"Sun", 7}},
+	"f12": generateZodiacValues(),
+	"f13": {{"A", 4}, {"2", 0}, {"3", 0}, {"4", 0}, {"5", 0}, {"6", 0}, {"7", 0}, {"8", 0}, {"9", 0}, {"10", 0}, {"J", 1}, {"Q", 2}, {"K", 3}},
+	"f52": generatePlayingCardValues(),
 }
 
-// generatePlayingCards creates all 52 playing card symbols.
-func generatePlayingCards() []string {
+// generateZodiacValues creates zodiac sign values.
+func generateZodiacValues() []FancyDieValue {
+	zodiacSigns := []string{"♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"}
+	values := make([]FancyDieValue, len(zodiacSigns))
+	for i, sign := range zodiacSigns {
+		values[i] = FancyDieValue{Name: sign, Value: i + 1}
+	}
+	return values
+}
+
+// LoadCustomFancyDice loads custom fancy dice from files matching the glob pattern.
+func LoadCustomFancyDice(globPattern string) error {
+	files, err := filepath.Glob(globPattern)
+	if err != nil {
+		return fmt.Errorf("invalid glob pattern '%s': %v", globPattern, err)
+	}
+
+	if len(files) == 0 {
+		return fmt.Errorf("no files found matching pattern '%s'", globPattern)
+	}
+
+	for _, file := range files {
+		err := loadSingleFancyDiceFile(file)
+		if err != nil {
+			return fmt.Errorf("error loading file '%s': %v", file, err)
+		}
+	}
+
+	return nil
+}
+
+// loadSingleFancyDiceFile loads a single fancy dice file.
+func loadSingleFancyDiceFile(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("cannot open file: %v", err)
+	}
+	defer file.Close()
+
+	var values []FancyDieValue
+	scanner := bufio.NewScanner(file)
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments.
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse the line.
+		value, err := parseFancyDiceLine(line, len(values)+1)
+		if err != nil {
+			return fmt.Errorf("line %d: %v", lineNum, err)
+		}
+
+		values = append(values, value)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading file: %v", err)
+	}
+
+	if len(values) == 0 {
+		return fmt.Errorf("file contains no valid fancy dice values")
+	}
+
+	// The dice type is determined by the number of values (rank of the dice).
+	diceType := fmt.Sprintf("f%d", len(values))
+
+	// Store the custom fancy dice values.
+	fancyDiceValues[diceType] = values
+
+	return nil
+}
+
+// parseFancyDiceLine parses a single line from a fancy dice file.
+// Format: "name, value" or "name" (defaults to position).
+func parseFancyDiceLine(line string, defaultValue int) (FancyDieValue, error) {
+	parts := strings.Split(line, ",")
+
+	if len(parts) == 1 {
+		// Just name, use default value.
+		name := strings.TrimSpace(parts[0])
+		if name == "" {
+			return FancyDieValue{}, fmt.Errorf("empty name")
+		}
+		return FancyDieValue{Name: name, Value: defaultValue}, nil
+	} else if len(parts) == 2 {
+		// Name and value.
+		name := strings.TrimSpace(parts[0])
+		valueStr := strings.TrimSpace(parts[1])
+
+		if name == "" {
+			return FancyDieValue{}, fmt.Errorf("empty name")
+		}
+
+		value, err := strconv.Atoi(valueStr)
+		if err != nil {
+			return FancyDieValue{}, fmt.Errorf("invalid value '%s': must be an integer", valueStr)
+		}
+
+		return FancyDieValue{Name: name, Value: value}, nil
+	} else {
+		return FancyDieValue{}, fmt.Errorf("invalid format: expected 'name' or 'name, value'")
+	}
+}
+
+// generatePlayingCardValues creates all 52 playing card values.
+func generatePlayingCardValues() []FancyDieValue {
 	suits := []string{"♣", "♦", "♥", "♠"}
 	ranks := []string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"}
 
-	cards := make([]string, 0, 52)
+	cards := make([]FancyDieValue, 0, 52)
 	for _, suit := range suits {
 		for _, rank := range ranks {
 			// Add numerical position (1-52) alongside the card symbol.
 			card := fmt.Sprintf("%s%s", rank, suit)
-			cards = append(cards, card)
+			cards = append(cards, FancyDieValue{Name: card, Value: len(cards) + 1})
 		}
 	}
 	return cards
@@ -113,7 +232,8 @@ func (ds DiceSet) Roll() RollResult {
 					dieType = fancyType
 
 					if fancyValues, exists := fancyDiceValues[fancyType]; exists && value > 0 && value <= len(fancyValues) {
-						fancyValue = fancyValues[value-1]
+						fancyValue = fancyValues[value-1].Name
+						total += fancyValues[value-1].Value // Add the scoring value to total
 					}
 
 					// Create display die with original sides.
@@ -158,7 +278,8 @@ func (ds DiceSet) Roll() RollResult {
 					dieType = fancyType
 
 					if values, exists := fancyDiceValues[fancyType]; exists && roll > 0 && roll <= len(values) {
-						fancyValue = values[roll-1] // Convert 1-based roll to 0-based index
+						fancyValue = values[roll-1].Name // Convert 1-based roll to 0-based index
+						total += values[roll-1].Value    // Add the scoring value to total
 					}
 				} else {
 					// Regular die.

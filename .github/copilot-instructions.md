@@ -101,8 +101,8 @@ and a value.
 Firstly we streamline the existing implementation of fancy dice to get rid of
 the scaling. But we should continue to use Monotype.
 
-Secondly we add a --fancy=GLOB option, which specifies a set of files with 
-the following format:
+Secondly we add a --fancy=GLOB option, which specifies a set of files via a glob
+pattern with the following format:
 
 ```txt
 # coins.fancy
