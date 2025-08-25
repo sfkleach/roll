@@ -145,6 +145,10 @@ heads
 In this version we give users an `--interactive/-i` option that is an
 interactive command-line "REPL" with GNU readline-like capabilities. 
 
+A return on an empty line will repeat the last roll. If there was no last roll
+it does nothing.
+
+
 ## Version 2
 
 You can save a dice set for later use by clicking the save button. This will 

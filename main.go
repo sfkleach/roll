@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -136,6 +138,19 @@ func printCommandLineResults(dieRolls []dice.DieRoll, total int) {
 	fmt.Printf("Total: %d\n", total)
 }
 
+// getHistoryFilePath returns the path for the command history file.
+func getHistoryFilePath() string {
+	// Try to get user's home directory.
+	currentUser, err := user.Current()
+	if err != nil {
+		// Fallback to temporary directory if we can't get home directory.
+		return filepath.Join(os.TempDir(), ".roll_history")
+	}
+
+	// Create history file in user's home directory.
+	return filepath.Join(currentUser.HomeDir, ".roll_history")
+}
+
 // runInteractive starts an interactive REPL for dice rolling.
 func runInteractive(ascending, descending bool) {
 	// Validate sorting flags.
@@ -146,12 +161,13 @@ func runInteractive(ascending, descending bool) {
 
 	// Configure readline with better settings.
 	config := &readline.Config{
-		Prompt:            "roll> ",
-		HistoryFile:       "", // No history file for now, could be added later
-		AutoComplete:      createAutoCompleter(),
-		InterruptPrompt:   "^C",
-		EOFPrompt:         "exit",
-		HistorySearchFold: true,
+		Prompt:                 "roll> ",
+		HistoryFile:            getHistoryFilePath(),
+		AutoComplete:           createAutoCompleter(),
+		InterruptPrompt:        "^C",
+		EOFPrompt:              "exit",
+		HistorySearchFold:      true,
+		DisableAutoSaveHistory: true, // We'll manually save only dice expressions
 	}
 
 	// Create readline instance.
@@ -165,7 +181,10 @@ func runInteractive(ascending, descending bool) {
 	fmt.Printf("Roll Dice Interactive Mode v%s\n", info.GetVersion())
 	fmt.Println("Enter dice expressions (e.g., 3d6, 2d10 d6) or 'help' for commands.")
 	fmt.Println("Type 'quit' or 'exit' to exit, or press Ctrl+C.")
+	fmt.Println("Press ENTER on empty line to repeat the last dice roll.")
 	fmt.Println()
+
+	var lastDiceExpression string
 
 	for {
 		line, err := rl.Readline()
@@ -186,30 +205,53 @@ func runInteractive(ascending, descending bool) {
 		// Trim whitespace from input.
 		line = strings.TrimSpace(line)
 
-		// Skip empty lines.
+		// Handle empty lines - repeat last dice roll.
 		if line == "" {
+			if lastDiceExpression != "" {
+				fmt.Printf("Repeating: %s\n", lastDiceExpression)
+				processDiceExpression(lastDiceExpression, ascending, descending)
+			}
 			continue
 		}
 
 		// Handle special commands.
-		switch strings.ToLower(line) {
+		lowerLine := strings.ToLower(line)
+		switch lowerLine {
 		case "quit", "exit":
+			// Don't save quit/exit commands to history.
 			fmt.Println("Goodbye!")
 			return
 		case "help":
+			// Don't save help commands to history.
 			printInteractiveHelp()
 			continue
 		case "version":
+			// Don't save version commands to history.
 			fmt.Printf("Roll Dice Application v%s\n", info.GetVersion())
 			continue
 		case "cheat", "cheatsheet":
+			// Don't save cheat commands to history.
 			fmt.Println(info.GetCheatsheetContent())
 			continue
 		}
 
-		// Process dice expression.
-		processDiceExpression(line, ascending, descending)
+		// Process dice expression and save to history if valid.
+		if isDiceExpression(line) {
+			lastDiceExpression = line
+			// Manually save only dice expressions to history.
+			rl.SaveHistory(line)
+			processDiceExpression(line, ascending, descending)
+		} else {
+			fmt.Printf("Unknown command: %s. Type 'help' for available commands.\n", line)
+		}
 	}
+}
+
+// isDiceExpression checks if a string looks like a valid dice expression.
+func isDiceExpression(expression string) bool {
+	// Try to parse it - if it succeeds, it's a valid dice expression.
+	_, err := dice.ParseDiceNotation(expression)
+	return err == nil
 }
 
 // createAutoCompleter creates an autocompleter for the readline interface.
@@ -258,6 +300,12 @@ func printInteractiveHelp() {
 	fmt.Println("  version        - Show version information")
 	fmt.Println("  cheat          - Show dice notation cheatsheet")
 	fmt.Println("  quit, exit     - Exit interactive mode")
+	fmt.Println("  <ENTER>        - Repeat the last dice roll")
+	fmt.Println()
+	fmt.Println("History Features:")
+	fmt.Println("  • UP/DOWN arrows - Navigate command history")
+	fmt.Println("  • History persists across sessions")
+	fmt.Println("  • Only dice expressions are saved to history")
 	fmt.Println()
 	fmt.Println("Dice Expression Examples:")
 	fmt.Println("  3d6            - Roll three six-sided dice")
