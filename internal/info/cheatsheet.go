@@ -35,7 +35,7 @@ func getCheatsheetMarkdownSource() string {
 ### CUSTOM FANCY DICE:
 • **--fancy=GLOB** - Load custom fancy dice from files matching pattern  
 • File format: one line per value as "name, value" or just "name"  
-• Example: **--fancy="*.dice"** loads all .dice files  
+• Example: **--fancy='*.dice'** loads all .dice files  
 
 ### EXCLUSIVE DICE (No Repeats in Group):
 • **3D6** - Roll three 6-sided dice with no duplicate values  
@@ -50,7 +50,7 @@ func getCheatsheetMarkdownSource() string {
 • roll 3d6 2d10  
 • roll --ascending 5D20  
 • roll f52 f52 f52  
-• roll --fancy="colors.dice" fcolors  
+• roll --fancy='colors.dice' fcolors  
 • -a 3d6 (in GUI)  
 • --descending 2d20 3d4 (in GUI)  
 `, Version)
