@@ -9,6 +9,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/sfkleach/roll/internal/dice"
@@ -19,6 +21,7 @@ type App struct {
 	window      fyne.Window
 	diceEntry   *widget.Entry
 	rollButton  *widget.Button
+	infoButton  *widget.Button
 	resultsCard *widget.Card
 	totalCard   *widget.Card
 }
@@ -36,12 +39,15 @@ func NewApp(window fyne.Window) *App {
 func (a *App) setupUI() {
 	// Create input field for dice notation.
 	a.diceEntry = widget.NewEntry()
-	a.diceEntry.SetPlaceHolder("e.g. 2d6, -a 3d6, --descending 2d20")
+	a.diceEntry.SetPlaceHolder("e.g. 2d6")
 	// No default text - starts empty so placeholder is visible.
 
 	// Create roll button.
 	a.rollButton = widget.NewButton("Roll Dice", a.onRollButtonClicked)
 	a.rollButton.Importance = widget.HighImportance
+
+	// Create info button with theme icon.
+	a.infoButton = widget.NewButtonWithIcon("", theme.InfoIcon(), a.onInfoButtonClicked)
 
 	// Create results card (will be populated when rolling).
 	a.resultsCard = widget.NewCard("", "", container.NewVBox(
@@ -59,7 +65,8 @@ func (a *App) setupUI() {
 	}
 
 	// Create layout.
-	inputContainer := container.NewBorder(nil, nil, nil, a.rollButton, a.diceEntry)
+	buttonsContainer := container.NewHBox(a.infoButton, a.rollButton)
+	inputContainer := container.NewBorder(nil, nil, nil, buttonsContainer, a.diceEntry)
 
 	content := container.NewVBox(
 		inputContainer,
@@ -215,4 +222,40 @@ func (a *App) showError(message string) {
 
 	// Clear the total area.
 	a.totalCard.SetContent(widget.NewLabel(""))
+}
+
+// onInfoButtonClicked shows information about dice notation and sorting options.
+func (a *App) onInfoButtonClicked() {
+	infoText := `Dice Notation Help:
+
+Basic Dice:
+• d20 - Single twenty-sided die
+• 3d6 - Three six-sided dice
+• 2d10 d6 - Multiple dice groups
+
+Fancy Dice:
+• f2 - Coin flip (heads/tails)
+• f4 - Playing card suits (♠♥♦♣)
+• f6 - Dice faces (⚀⚁⚂⚃⚄⚅)
+• f7 - Days of week
+• f12 - Zodiac signs
+• f13 - Playing card ranks (A,2-10,J,Q,K)
+• f52 - Full playing cards
+
+Exclusive Dice (no repeats):
+• 3D6 - Three different values 1-6
+• 4F4 - All four card suits
+
+Sorting Options:
+• -a or --ascending - Sort results low to high
+• -d or --descending - Sort results high to low
+
+Examples:
+• 3d6
+• -a 5d6
+• --descending 2d20 3d4
+• 3D6 (exclusive)
+• f4 f6 f12`
+
+	dialog.ShowInformation("Dice Notation Help", infoText, a.window)
 }
