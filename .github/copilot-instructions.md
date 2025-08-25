@@ -140,6 +140,10 @@ tails
 heads
 ```
 
+## Version 1.6
+
+In this version we give users an `--interactive/-i` option that is an
+interactive command-line "REPL" with GNU readline-like capabilities. 
 
 ## Version 2
 
