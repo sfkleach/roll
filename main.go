@@ -35,6 +35,12 @@ func main() {
 
 	// Handle help flag.
 	if *showHelp {
+		fmt.Printf("Usage: %s [OPTIONS] [DICE_NOTATION]\n\n", os.Args[0])
+		fmt.Println("Examples:")
+		fmt.Println("  roll 3d6")
+		fmt.Println("  roll --ascending 2d10 d6")
+		fmt.Println("  roll --fancy='*.dice' 2f6")
+		fmt.Println()
 		fmt.Println(info.GetCheatsheetContent())
 		os.Exit(0)
 	}
