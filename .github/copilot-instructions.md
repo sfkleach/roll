@@ -92,6 +92,55 @@ displayed in the cheatsheet.
 In addition add the version to the cheatsheet which pops up when the info (i)
 button is pressed. 
 
+## Version 1.5
+
+In this version we both streamline and improve fancy dice. The key idea is
+that fancy dice are represented by a mapping from an index to a unicode string
+and a value. 
+
+Firstly we streamline the existing implementation of fancy dice to get rid of
+the scaling. But we should continue to use Monotype.
+
+Secondly we add a --fancy=GLOB option, which specifies a set of files with 
+the following format:
+
+```txt
+# coins.fancy
+tails, 0
+heads, 1
+```
+
+```txt
+# card_count.fancy, useful for contract bridge.
+2, 0
+3, 0
+4, 0
+5, 0
+6, 0
+7, 0
+8, 0
+9, 0
+10, 0
+J: 1
+Q: 2
+K: 3
+A: 4
+```
+
+Lines starting with `#` are removed. Whitespace-only lines are removed. There
+must be at least one non-blank line. The lines are comma-separated with one or
+two fields (name, value). The name will be used as the fancy text and the value
+will be used as its scoring value. If the value is omitted then the value 
+becomes its position in the list (starting from 1).
+
+So `coins.txt` could equally have been written as:
+
+```txt
+tails
+heads
+```
+
+
 ## Version 2
 
 You can save a dice set for later use by clicking the save button. This will 
