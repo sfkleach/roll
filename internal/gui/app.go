@@ -15,6 +15,24 @@ import (
 	"github.com/sfkleach/roll/internal/info"
 )
 
+// hasReplacementCharacters checks if a string contains actual replacement characters
+// that indicate the font doesn't support the Unicode characters.
+func hasReplacementCharacters(text string) bool {
+	for _, r := range text {
+		if r == '\uFFFD' || // Unicode replacement character �
+			r == '\u25A1' || // White square □
+			r == '\u2610' || // Ballot box ☐
+			r == '\u25AF' || // White vertical rectangle ▯
+			r == '\u25AD' || // White rectangle ▭
+			r == '?' || // Question mark fallback
+			r == '\u003F' || // Another question mark representation
+			(r >= '\u2680' && r <= '\u2685') { // Dice face range - often show as replacement
+			return true
+		}
+	}
+	return false
+}
+
 // App represents the main application window and its components.
 type App struct {
 	window      fyne.Window
@@ -180,13 +198,16 @@ func (a *App) updateResults(result dice.RollResult) {
 
 		// Right column: roll result (fancy value or numeric).
 		if dieRoll.FancyValue != "" {
-			// For fancy dice, use Monospace font but no scaling
-			rollValue := widget.NewLabel(dieRoll.FancyValue)
-			rollValue.Alignment = fyne.TextAlignTrailing
-			rollValue.TextStyle = fyne.TextStyle{
-				Monospace: true,
-				Bold:      true,
+			// For fancy dice, check if Unicode characters render as replacement characters
+			displayText := dieRoll.FancyValue
+			if hasReplacementCharacters(dieRoll.FancyValue) {
+				// Fall back to showing the score if Unicode shows replacement characters
+				displayText = fmt.Sprintf("%d", dieRoll.Result)
 			}
+
+			rollValue := widget.NewLabel(displayText)
+			rollValue.Alignment = fyne.TextAlignTrailing
+			// No special TextStyle to allow system font with natural colors
 			gridContent = append(gridContent, diceType, rollValue)
 		} else {
 			// Regular numeric value
