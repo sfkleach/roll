@@ -18,41 +18,41 @@ func getCheatsheetMarkdownSource() string {
 ## Cheatsheet
 
 ### BASIC DICE NOTATION:
-• **d20** - Roll a single 20-sided die  
-• **3d6** - Roll three 6-sided dice  
-• **2d10 d6** - Roll two 10-sided dice and one 6-sided die  
-• **1d20,7d4** - Roll one 20-sided die and seven 4-sided dice  
+- **d20** - Roll a single 20-sided die  
+- **3d6** - Roll three 6-sided dice  
+- **2d10 d6** - Roll two 10-sided dice and one 6-sided die  
+- **1d20,7d4** - Roll one 20-sided die and seven 4-sided dice  
 
 ### FANCY DICE (Custom Unicode Characters):
-• **f2** - Two-sided coin (heads/tails)  
-• **f4** - Four-sided die with suit symbols (♠♥♦♣)  
-• **f6** - Six-sided die with dot patterns (⚀⚁⚂⚃⚄⚅)  
-• **f7** - Seven-sided die with days of week (Mon-Sun)  
-• **f12** - Twelve-sided die with zodiac signs  
-• **f13** - Thirteen-sided die with card ranks (A,2-10,J,Q,K)  
-• **f52** - Fifty-two-sided die with playing cards  
+- **f2** - Two-sided coin (heads/tails)  
+- **f4** - Four-sided die with suit symbols (♠♥♦♣)  
+- **f6** - Six-sided die with dot patterns (⚀⚁⚂⚃⚄⚅)  
+- **f7** - Seven-sided die with days of week (Mon-Sun)  
+- **f12** - Twelve-sided die with zodiac signs  
+- **f13** - Thirteen-sided die with card ranks (A,2-10,J,Q,K)  
+- **f52** - Fifty-two-sided die with playing cards  
 
 ### CUSTOM FANCY DICE:
-• **--fancy=GLOB** - Load custom fancy dice from files matching pattern  
-• File format: one line per value as "name, value" or just "name"  
-• Example: **--fancy='*.dice'** loads all .dice files  
+- **--fancy=GLOB** - Load custom fancy dice from files matching pattern  
+- File format: one line per value as "name, value" or just "name"  
+- Example: **--fancy='*.dice'** loads all .dice files  
 
 ### EXCLUSIVE DICE (No Repeats in Group):
-• **3D6** - Roll three 6-sided dice with no duplicate values  
-• **5D20** - Roll five 20-sided dice with no duplicate values  
-• **13F52** - Roll thirteen cards with no duplicates  
+- **3D6** - Roll three 6-sided dice with no duplicate values  
+- **5D20** - Roll five 20-sided dice with no duplicate values  
+- **13F52** - Roll thirteen cards with no duplicates  
 
 ### SORTING OPTIONS:
-• **-a** or **--ascending** - Sort results in ascending order  
-• **-d** or **--descending** - Sort results in descending order  
+- **-a** or **--ascending** - Sort results in ascending order  
+- **-d** or **--descending** - Sort results in descending order  
 
 ### EXAMPLES:
-• roll 3d6 2d10  
-• roll --ascending 5D20  
-• roll f52 f52 f52  
-• roll --fancy='colors.dice' fcolors  
-• -a 3d6 (in GUI)  
-• --descending 2d20 3d4 (in GUI)  
+- roll 3d6 2d10  
+- roll --ascending 5D20  
+- roll f52 f52 f52  
+- roll --fancy='colors.dice' fcolors  
+- -a 3d6 (in GUI)  
+- --descending 2d20 3d4 (in GUI)  
 `, Version)
 }
 
