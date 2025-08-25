@@ -75,6 +75,11 @@ func markdownToPlainText(md string) string {
 		// Remove bold formatting
 		line = strings.ReplaceAll(line, "**", "")
 
+		// Convert markdown list items to bullet points
+		if strings.HasPrefix(line, "- ") {
+			line = "• " + line[2:]
+		}
+
 		// Clean up extra whitespace
 		line = strings.TrimSpace(line)
 
