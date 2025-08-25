@@ -32,6 +32,13 @@ jobs:
     - name: Build
       run: go build -v ./...
       
+    - name: Test version injection
+      run: |
+        # Test that we can build with version injection
+        go build -ldflags "-X github.com/sfkleach/roll/internal/info.Version=test-ci" -o roll-test .
+        ./roll-test --version
+        rm roll-test
+      
     - name: Run tests
       run: go test -v ./...
       

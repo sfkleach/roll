@@ -13,6 +13,7 @@ import (
 
 	"github.com/sfkleach/roll/internal/dice"
 	"github.com/sfkleach/roll/internal/gui"
+	"github.com/sfkleach/roll/internal/info"
 )
 
 func main() {
@@ -21,7 +22,21 @@ func main() {
 	flag.BoolVar(ascending, "a", false, "Sort individual dice rolls in ascending order (short form)")
 	var descending = flag.Bool("descending", false, "Sort individual dice rolls in descending order")
 	flag.BoolVar(descending, "d", false, "Sort individual dice rolls in descending order (short form)")
+	var showHelp = flag.Bool("help", false, "Show help and cheatsheet")
+	var showVersion = flag.Bool("version", false, "Show version information")
 	flag.Parse()
+
+	// Handle version flag.
+	if *showVersion {
+		fmt.Printf("Roll Dice Application v%s\n", info.GetVersion())
+		os.Exit(0)
+	}
+
+	// Handle help flag.
+	if *showHelp {
+		fmt.Println(info.GetCheatsheetContent())
+		os.Exit(0)
+	}
 
 	// Get remaining arguments (dice expressions).
 	args := flag.Args()

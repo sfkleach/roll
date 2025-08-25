@@ -9,11 +9,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/sfkleach/roll/internal/dice"
+	"github.com/sfkleach/roll/internal/info"
 )
 
 // App represents the main application window and its components.
@@ -82,7 +82,7 @@ func (a *App) setupUI() {
 func parseFlagsFromInput(input string) (diceNotation string, ascending bool, descending bool, err error) {
 	parts := strings.Fields(input)
 	var cleanParts []string
-	
+
 	for _, part := range parts {
 		switch part {
 		case "-a", "--ascending":
@@ -99,7 +99,7 @@ func parseFlagsFromInput(input string) (diceNotation string, ascending bool, des
 			cleanParts = append(cleanParts, part)
 		}
 	}
-	
+
 	diceNotation = strings.Join(cleanParts, " ")
 	return diceNotation, ascending, descending, nil
 }
@@ -224,38 +224,36 @@ func (a *App) showError(message string) {
 	a.totalCard.SetContent(widget.NewLabel(""))
 }
 
-// onInfoButtonClicked shows information about dice notation and sorting options.
+// onInfoButtonClicked shows information about dice notation and sorting options in a separate window.
 func (a *App) onInfoButtonClicked() {
-	infoText := `Dice Notation Help:
+	// Create a new window for the cheatsheet.
+	cheatWindow := fyne.CurrentApp().NewWindow("Dice Rolling Cheatsheet")
+	cheatWindow.Resize(fyne.NewSize(600, 500))
 
-Basic Dice:
-• d20 - Single twenty-sided die
-• 3d6 - Three six-sided dice
-• 2d10 d6 - Multiple dice groups
+	// Get the unified cheatsheet content in markdown format.
+	cheatContent := info.GetCheatsheetMarkdown()
 
-Fancy Dice:
-• f2 - Coin flip (heads/tails)
-• f4 - Playing card suits (♠♥♦♣)
-• f6 - Dice faces (⚀⚁⚂⚃⚄⚅)
-• f7 - Days of week
-• f12 - Zodiac signs
-• f13 - Playing card ranks (A,2-10,J,Q,K)
-• f52 - Full playing cards
+	// Create a rich text widget with the cheatsheet content.
+	richText := widget.NewRichTextFromMarkdown(cheatContent)
+	richText.Wrapping = fyne.TextWrapWord
 
-Exclusive Dice (no repeats):
-• 3D6 - Three different values 1-6
-• 4F4 - All four card suits
+	// Create close button.
+	closeBtn := widget.NewButton("Close", func() {
+		cheatWindow.Close()
+	})
 
-Sorting Options:
-• -a or --ascending - Sort results low to high
-• -d or --descending - Sort results high to low
+	// Create scroll container for the content.
+	scroll := container.NewScroll(richText)
 
-Examples:
-• 3d6
-• -a 5d6
-• --descending 2d20 3d4
-• 3D6 (exclusive)
-• f4 f6 f12`
+	// Layout the window.
+	content := container.NewBorder(
+		nil,      // top
+		closeBtn, // bottom
+		nil,      // left
+		nil,      // right
+		scroll,   // center
+	)
 
-	dialog.ShowInformation("Dice Notation Help", infoText, a.window)
+	cheatWindow.SetContent(content)
+	cheatWindow.Show()
 }

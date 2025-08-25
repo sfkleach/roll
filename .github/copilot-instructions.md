@@ -78,6 +78,19 @@ You can run roll from the command line, passing the dice expressions as argument
 In addition you can pass a --ascending or --descending flag to sort the individual 
 dice rolls in ascending or descending order by value.
 
+## Version 1.4
+
+In this version we lean into the idea of it being both a command-line utility
+and a GUI utility. Firstly make the cheatsheet pop up in its own separate 
+window. At the moment it is being overwritten by the OK button. The cheatsheet
+should be printed to the terminal when the --help option is used.
+
+Secondly Add a --version flag to display the current version and 
+arrange that this is baked in when we do a release build. The version is 
+displayed in the cheatsheet.
+
+In addition add the version to the cheatsheet which pops up when the info (i)
+button is pressed. 
 
 ## Version 2
 

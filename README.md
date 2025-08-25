@@ -106,8 +106,32 @@ just ci
 ### Building
 
 ```bash
+# Build with automatic version detection
 just build
+
+# Build with specific version
+just build "1.4.0"
+
+# Build for current platform using build script
+./scripts/build.sh
+
+# Build with custom version using build script
+./scripts/build.sh "1.4.0-beta"
 ```
+
+### Version Management
+
+The application version is automatically managed through git tags:
+
+- **Development builds**: Show version as "dev"
+- **Tagged releases**: Version is extracted from git tags (e.g., `v1.4.0` becomes `1.4.0`)
+- **GitHub releases**: Version is automatically injected during the release workflow
+
+To create a new release:
+1. Create and push a git tag: `git tag v1.4.0 && git push origin v1.4.0`
+2. The GitHub Actions workflow will automatically build and release binaries for all platforms
+
+The version is injected at build time using Go's `-ldflags`, so no manual version updates are required in the source code.
 
 ### Testing
 
